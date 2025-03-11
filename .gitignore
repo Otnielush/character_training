@@ -180,3 +180,6 @@ cython_debug/
 .DS_Store
 ._.DS_Store
 aitk_db.db
+
+tmp*/
+temp*/
