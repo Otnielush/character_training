@@ -5,24 +5,26 @@ RUN apt-get update
 
 WORKDIR /app
 ARG CACHEBUST=1
-RUN git clone https://github.com/ostris/ai-toolkit.git && \
-    cd ai-toolkit && \
+RUN git clone https://github.com/Otnielush/character_training.git && \
+    cd character_training && \
     git submodule update --init --recursive
 
-WORKDIR /app/ai-toolkit
+WORKDIR /app/character_training
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get install -y tmux nvtop htop
 
 ENV HF_HOME="/workspace/hf"
 ENV HF_HUB_CACHE="/workspace/hf"
-ENV $Gpu_Num=1
+ENV $GPU_NUM=1
 
 # mask workspace
 # dir for dataset and save weights, by default exists for runpod
 # RUN mkdir /workspace
+# dir for saving trained weights
+# RUN mkdir /training_output
 
 
-WORKDIR /app/ai-toolkit
-CMD ["python otniel_scripts/caption_with_florence-2.py /workspace/dataset --output_dir /dataset",
-     "accelerate launch --num_processes $Gpu_Num --mixed_precision bf16 --num_cpu_threads_per_process 2 run.py /workspace/config/train_config_h100.yaml"]
+WORKDIR /app/character_training
+CMD ["python otniel_scripts/caption_with_florence-2.py /dataset --output_dir /train_dataset",
+     "accelerate launch --num_processes $GPU_NUM --mixed_precision bf16 --num_cpu_threads_per_process 2 run.py /workspace/config/train_config_$GPU_NUMh100.yaml"]

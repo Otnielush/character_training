@@ -20,7 +20,9 @@ omegaconf
 k-diffusion
 open_clip_torch
 timm
+tqdm
 prodigyopt
+pillow-heif
 controlnet_aux==0.0.7
 python-dotenv
 bitsandbytes
@@ -33,4 +35,3 @@ huggingface_hub
 peft
 gradio
 python-slugify
-google-generativeai

@@ -620,17 +620,17 @@ class BaseSDTrainProcess(BaseTrainProcess):
                 json.dump(json_data, f, indent=4)
 
         # save optimizer
-        if self.optimizer is not None:
-            try:
-                filename = f'optimizer.pt'
-                file_path = os.path.join(self.save_root, filename)
-                state_dict = self.optimizer.state_dict()
-                torch.save(state_dict, file_path)
-            except Exception as e:
-                print_acc(e)
-                print_acc("Could not save optimizer")
+        # if self.optimizer is not None:
+        #     try:
+        #         filename = f'optimizer.pt'
+        #         file_path = os.path.join(self.save_root, filename)
+        #         state_dict = self.optimizer.state_dict()
+        #         torch.save(state_dict, file_path)
+        #     except Exception as e:
+        #         print_acc(e)
+        #         print_acc("Could not save optimizer")
+        # print_acc(f"Saved to {file_path}")
 
-        print_acc(f"Saved to {file_path}")
         self.clean_up_saves()
         self.post_save_hook(file_path)
 
