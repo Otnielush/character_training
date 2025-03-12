@@ -1,0 +1,127 @@
+# Download models
+
+pip install -U "huggingface_hub[cli]"
+
+huggingface-cli login
+add token
+
+export HF_HOME="/workspace/hf"
+export HF_HUB_CACHE="/workspace/hf"
+
+huggingface-cli download black-forest-labs/FLUX.1-dev flux1-dev.safetensors --local-dir /workspace/hf/unet
+huggingface-cli download stabilityai/stable-diffusion-3-medium text_encoders/t5xxl_fp16.safetensors --local-dir /workspace/hf/T5
+huggingface-cli download stabilityai/stable-diffusion-3-medium text_encoders/clip_l.safetensors --local-dir /workspace/hf/Clip
+huggingface-cli download black-forest-labs/FLUX.1-dev ae.safetensors --local-dir /workspace/hf/ae
+huggingface-cli download Kijai/flux-fp8 flux1-dev-fp8-e4m3fn.safetensors --local-dir /workspace/hf/unet
+
+
+# Installation
+# sd-scripts
+
+mkdir /train
+cd /train
+git clone -b sd3 https://github.com/kohya-ss/sd-scripts.git
+cd sd-scripts
+pip install --upgrade -r requirements.txt
+pip3 install -U xformers==0.0.28.post1
+
+accelerate config --config_file config.yaml
+
+
+# SimpleTuner
+
+mkdir /train
+cd /train
+git clone --branch=release https://github.com/bghira/SimpleTuner.git
+cd SimpleTuner
+pip install -U poetry pip
+poetry config virtualenvs.create false
+poetry install
+
+cd /workspace
+git clone https://github.com/Dao-AILab/flash-attention
+pushd flash-attention
+  pushd hopper
+    python setup.py install
+  popd
+popd
+
+
+cd /train/SimpleTuner
+sh train.sh
+
+masked loss - https://github.com/bghira/SimpleTuner/blob/main/documentation/DREAMBOOTH.md#masked-loss
+
+
+# Ai-toolkit
+
+cd /workspace
+git clone https://github.com/ostris/ai-toolkit.git
+cd ai-toolkit
+git submodule update --init --recursive
+
+cd /workspace
+git clone https://github.com/Otnielush/character_training.git
+cd character_training
+git submodule update --init --recursive
+
+
+export HF_HOME="/workspace/hf"
+export HF_HUB_CACHE="/workspace/hf"
+cd /workspace/character_training
+pip install --no-cache-dir -r requirements.txt
+
+python otniel_scripts/caption_with_florence-2.py /workspace/dataset_clear --output_dir /train_dataset
+python run.py /workspace/config/lora_flux_h100-20.yaml
+
+accelerate launch --num_processes 2 --mixed_precision bf16 --num_cpu_threads_per_process 2 run.py config/
+
+
+
+# Notes
+
+pip install --no-cache-dir
+
+lr_scheduler: cosine (not enough, not reaching overfiting)
+
+add FluxSingleAttnProcessor3_0 to ai_toolkit (helpers/models/flux/attention.py)
+
+add:
+import os
+os.environ['HF_HOME'] = 'your path'
+os.environ['HF_HUB_CACHE'] = 'your path'
+
+export HF_HOME="/workspace/hf"
+export HF_HUB_CACHE="/workspace/hf"
+
+
+
+python run.py ../configs/train_lora_flux_runpod_h100_7.yaml
+python run.py ../configs/train_lora_flux_runpod_h100_8.yaml
+
+
+сделать препроцессинг на фотки с детекцией персонажа и обрезкой до 1024х1024
+
+попробовать сделать датасет из селфи с разных сторон + парочку во весь рост
+
+попробовать добавить фиксирующие фотки в датасет
+
+
+Набор стилей: https://civitai.com
+
+
+попробовать скрипт Kohya_ss
+
+Upscaling: SUPIR
+
+заменить загрузку на флоат8
+
+only_if_contains: transformer.single_transformer_blocks.(7/12/16/20).proj_out
+
+
+Dataset preparation: https://civitai.com/articles/7777/detailed-flux-training-guide-dataset-preparation
+
+
+Onnx + Lora: попробовать мержить веса Лоры с весами модели - https://onnxruntime.ai/docs/genai/tutorials/finetune.html
+
+Docker: https://www.youtube.com/watch?v=xDgMCywcWqY
