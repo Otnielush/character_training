@@ -5,6 +5,7 @@ RUN apt-get update
 
 WORKDIR /app
 ARG CACHEBUST=1
+
 RUN git clone https://github.com/Otnielush/character_training.git
 RUN cd character_training && git submodule update --init --recursive
 
@@ -31,6 +32,7 @@ RUN ["chmod", "+x", "/app/character_training/start_training.sh"]
 CMD ["/app/character_training/start_training.sh"]
 
 # run container important params:
+    # --gpus=all  - give access to gpus
     # -e GPU_NUM=_number of GPUs, default 1
     # -v /dataset
     # -v /workspace/hf

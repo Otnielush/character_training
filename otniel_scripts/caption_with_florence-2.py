@@ -145,14 +145,14 @@ def process_directory(args, image_dir, total_to_process: int = None, ):
                 if filename.lower().endswith(".heic"):
                     new_filename = os.path.splitext(filename)[0] + '.jpg'
                     new_filepath = os.path.join(output_dir, new_filename)
-                    img = Image.open(full_filepath)
-                    img = img.convert("RGB")
-                    img.save(new_filepath, "JPEG", quality=95)
+                    image = Image.open(full_filepath)
+                    image = image.convert("RGB")
+                    image.save(new_filepath, "JPEG", quality=95)
                     os.remove(full_filepath)
-                    full_filepath = new_filepath
                     filename = new_filename
+                else:
+                    image = Image.open(full_filepath)
 
-                image = Image.open(full_filepath)
                 person, head = get_bboxes_person_head(image)
                 image_rotated, person_bbox, head_bbox = rotate_if_needed(image, person, head)
                 image_resized = crop_resize(image_rotated, args.target_size, person_bbox, head_bbox)
