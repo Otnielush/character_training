@@ -96,7 +96,6 @@ def rotate_if_needed(image, person_bbox, head_bbox):
     return image, person_bbox, head_bbox
 
 
-
 def crop_resize(image, size, person_bbox=None, head_bbox=None):
     width, height = image.width, image.height
     aspect = height / width
@@ -105,12 +104,17 @@ def crop_resize(image, size, person_bbox=None, head_bbox=None):
 
     if aspect > 1:  # tall
         cut_size = (aspect - 1) * width
-        if bbox[0][1] > cut_size + margin:
+        if height - bbox[0][3] > cut_size + margin:
             # left, top, right, bottom
-            image = image.crop([0, int(cut_size), width, height])
+            image = image.crop([0, 0, width, height - int(cut_size)])
         else:
-            top = int(max(margin, bbox[0][1]))
-            image = image.crop([0, top, width, height - int(cut_size - top)])
+            bot = int(max(0, height - bbox[0][3] - margin))
+            top = cut_size - bot
+            if top > bbox[0][1] - margin:
+                top = bbox[0][1] - margin
+                bot = cut_size - top
+
+            image = image.crop([0, top, width, height - bot])
 
     elif aspect < 1:  # wide
         cut_size = (1 - aspect) * width
