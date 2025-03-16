@@ -7,9 +7,13 @@ WORKDIR /app
 ARG CACHEBUST=1
 
 RUN git clone https://github.com/Otnielush/character_training.git
+RUN git clone https://github.com/Otnielush/character_inference.git
 RUN cd character_training && git submodule update --init --recursive
 
 WORKDIR /app/character_training
+RUN python -m pip install --no-cache-dir -r requirements.txt
+
+WORKDIR /app/character_inference
 RUN python -m pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get install -y tmux nvtop htop
