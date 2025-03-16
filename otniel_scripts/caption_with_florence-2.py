@@ -152,7 +152,8 @@ def process_directory(args, image_dir, total_to_process: int = None, ):
                     image = Image.open(full_filepath)
                     image = image.convert("RGB")
                     image.save(new_filepath, "JPEG", quality=95)
-                    os.remove(full_filepath)
+                    if len(args.output_dir) == 0: # if output is same folder then delete old
+                        os.remove(full_filepath)
                     filename = new_filename
                 else:
                     image = Image.open(full_filepath)

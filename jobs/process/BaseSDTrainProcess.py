@@ -1880,7 +1880,7 @@ class BaseSDTrainProcess(BaseTrainProcess):
         # self.step_num = 0
 
         print_acc(f"Compiling Model")
-        torch.compile(self.sd.unet, dynamic=True)
+        self.sd.unet = torch.compile(self.sd.unet, dynamic=True)
 
         # make sure all params require grad
         self.ensure_params_requires_grad(force=True)
