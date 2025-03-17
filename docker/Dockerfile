@@ -6,15 +6,29 @@ RUN apt-get update
 WORKDIR /app
 ARG CACHEBUST=1
 
-RUN git clone https://github.com/Otnielush/character_training.git
 RUN git clone https://github.com/Otnielush/character_inference.git
+RUN git clone https://github.com/Otnielush/character_training.git
 RUN cd character_training && git submodule update --init --recursive
 
 WORKDIR /app/character_training
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 WORKDIR /app/character_inference
-RUN python -m pip install --no-cache-dir -r requirements.txt
+RUN python3 -m pip install --no-cache-dir -r requirements_docker.txt
+
+ENV TORCH_CUDA_ARCH_LIST=Turing
+ENV PATH /opt/conda/bin:/usr/local/bin:${PATH}
+ENV LD_LIBRARY_PATH /usr/local/cuda/lib64/stubs/:/usr/lib/x86_64-linux-gnu:/usr/local/cuda-12.2/compat/:/usr/local/cuda-12.2/targets/x86_64-linux/lib/stubs:$LD_LIBRARY_PATH
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+
+ENV CUDA_HOME='/usr/local/cuda'
+RUN python3 -m pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
+WORKDIR /repos
+RUN git clone https://github.com/aredden/torch-cublas-hgemm.git
+WORKDIR /repos/torch-cublas-hgemm
+RUN python3 -m pip install --no-build-isolation -U -v .
+
 
 RUN apt-get install -y tmux nvtop htop
 
