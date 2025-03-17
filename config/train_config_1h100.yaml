@@ -1,0 +1,131 @@
+---
+job: extension
+config:
+  # this name will be the folder and filename name
+  name: "training_output"
+  process:
+    - type: 'sd_trainer'
+      # root folder to save training sessions/samples/weights
+      training_folder: "/"
+      # uncomment to see performance stats in the terminal every N steps
+#      performance_log_every: 200
+      device: cuda:0
+      # if a trigger word is specified, it will be added to captions of training data if it does not already exist
+      # alternatively, in your captions you can add [trigger] and it will be replaced with the trigger word
+      trigger_word: "0TN1"
+      network:
+        type: "lora"
+        linear: 128
+        linear_alpha: 16
+        network_kwargs:
+          # for targeting a specific layers. variants in helpers/lora_configs.py
+          only_if_contains:
+            - "transformer.single_transformer_blocks.7"
+            - "transformer.single_transformer_blocks.20"
+
+      save:
+        dtype: bfloat16 # precision to save
+        save_every: 2000 # save every this many steps
+        max_step_saves_to_keep: 3 # how many intermittent saves to keep
+        push_to_hub: false #change this to True to push your trained model to Hugging Face.
+        # You can either set up a HF_TOKEN env variable or you'll be prompted to log-in         
+#       hf_repo_id: your-username/your-model-slug
+#       hf_private: true #whether the repo is private or public
+      datasets:
+        # datasets are a folder of images. captions need to be txt files with the same name as the image
+        # for instance image2.jpg and image2.txt. Only jpg, jpeg, and png are supported currently
+        # images will automatically be resized and bucketed into the resolution specified
+        # on windows, escape back slashes with another backslash so
+        # "C:\\path\\to\\images\\folder"
+        - folder_path: "/train_dataset"
+          caption_ext: "txt"
+          caption_dropout_rate: 0.05  # will drop out the caption 5% of time
+          shuffle_tokens: false  # shuffle caption order, split by commas
+          cache_latents_to_disk: true  # leave this true unless you know what you're doing
+          resolution: [ 512, 768, 1024]  # flux enjoys multiple resolutions
+      train:
+        batch_size: 2
+        steps: 800  # total number of steps to train 500 - 4000 is a good range
+        gradient_accumulation_steps: 2
+        train_unet: true
+        train_text_encoder: false  # probably won't work with flux
+        content_or_style: balanced
+        gradient_checkpointing: false  # need the on unless you have a ton of vram
+        noise_scheduler: "flowmatch" # for training only
+        optimizer: "adamw8bit" # "adamw8bit"
+        lr: 1e-3
+        # uncomment this to skip the pre training sample
+        skip_first_sample: true
+        # uncomment to completely disable sampling
+#        disable_sampling: true
+        # uncomment to use new vell curved weighting. Experimental but may produce better results
+        linear_timesteps: true
+        lr_scheduler: linear
+        lr_scheduler_params:
+          start_factor : 1.0
+          end_factor: 0.1
+          total_iters: 800
+
+        # ema will smooth out learning, but could slow it down. Recommended to leave on.
+        ema_config:
+          use_ema: true
+          ema_decay: 0.99
+
+        # will probably need this if gpu supports it for flux, other dtypes may not work correctly
+        dtype: bf16
+      model:
+        # huggingface model name or path
+        name_or_path: "black-forest-labs/FLUX.1-dev"
+        is_flux: true
+        quantize: true  # run 8bit mixed precision
+        xformers: true
+#        low_vram: true  # uncomment this if the GPU is connected to your monitors. It will use less vram to quantize, but is slower.
+      sample:
+        sampler: "flowmatch" # must match train.noise_scheduler
+        sample_every: 800 # sample every this many steps
+        width: 512
+        height: 512
+        prompts:
+          - "A beautiful [trigger] asian woman in traditional clothing with golden hairpin and green eyes, wearing a red kimono with dragon patterns"
+          - "portrait of a young [trigger] with short, tousled dark brown hair, light stubble, and sharp facial features. He is wearing a fitted white T-shirt with red accents, featuring the text 'I Solved the Cube!' and an image of a Rubik’s cube. He has a confident and playful smirk. He is holding a solved Rubik’s cube in one hand, with the other hand casually resting on his hip. His posture is relaxed, and he is making direct eye contact with the camera. The background is an outdoor urban park with blurred trees and city structures. The lighting is warm and natural, highlighting his jawline and the texture of his T-shirt. Rendered in 8K resolution with hyperrealistic details, sharp facial features, and a modern, vibrant atmosphere"
+          - "[trigger] with sharp, chiseled facial features, wearing an avant-garde headpiece in the form of a spinning vinyl record. The record acts as a futuristic hat, with a turntable needle placed on it as if playing. His lips are well-defined, and his jawline is accentuated by moody lighting. The lighting is high-contrast and dramatic, casting deep shadows that conceal his eyes, creating a sense of mystery. The background is a sleek, modern gradient gray, emphasizing the conceptual and artistic nature of the portrait. Rendered in 8K resolution with hyperrealistic textures, cinematic lighting, and an artistic, surreal composition"
+          - "Take a photo on the poster of [trigger] Lara Croft Tomb Raider, in the hands of pistols, hands to the face crosswise"
+          - "portrait of a [trigger] with wavy, golden blonde hair styled in a slightly tousled manner, with light stubble, bright eyes, and a warm smile. He holds a bouquet of pink peonies in his arms, looking down at the flowers. He is wearing a relaxed white shirt with the top buttons undone, layered with a beige knit cardigan. His pose is casual, with one hand gently holding the flowers, the other tucked in his pocket. The background is a soft, neutral beige, creating a warm and inviting atmosphere. Professional soft natural daylight lighting emphasizes his hair, facial features, and flowers. Sharp focus highlights the texture of the hair, petals, and clothing. Subtle pastel color grading enhances the gentle and comforting mood"
+          - "photograph, woman, [trigger], UHD, photorealistic"
+          - "Headshot of a handsome young [trigger]: Dark green sweater with buttons and shawl collar, black hair, short beard. Serious expression on a black background, soft studio lighting."
+
+#          - "[trigger] with red hair, playing chess at the park, bomb going off in the background"
+#          - "a man holding a coffee cup, in a beanie, sitting at a cafe"
+#          - "[trigger] showing off his cool new t shirt at the beach, a shark is jumping out of the water in the background"
+#          - "[trigger] playing the guitar, on stage, singing a song, laser lights, punk rocker"
+#          - "[trigger] with a beard, building a chair, in a wood shop"
+        neg: ""  # not used on flux
+        seed: 42
+        walk_seed: true
+        guidance_scale: 4
+        sample_steps: 28
+
+      matrix_params:
+        generate_matrix: true  # запускает генерацию матрицы картинок с разными адаптерами эффектов
+        width: 1024
+        height: 1024
+        sample_steps: 50  # сколько итераций на генерацию 1 картинки. 28 - среднее качество, 50 - максимальное
+        prompts:  # инструкции для генерации картинок
+          - "A beautiful [trigger] asian woman in traditional clothing with golden hairpin and green eyes, wearing a red kimono with dragon patterns"
+          - "portrait of a young [trigger] with short, tousled dark brown hair, light stubble, and sharp facial features. He is wearing a fitted white T-shirt with red accents, featuring the text 'I Solved the Cube!' and an image of a Rubik’s cube. He has a confident and playful smirk. He is holding a solved Rubik’s cube in one hand, with the other hand casually resting on his hip. His posture is relaxed, and he is making direct eye contact with the camera. The background is an outdoor urban park with blurred trees and city structures. The lighting is warm and natural, highlighting his jawline and the texture of his T-shirt. Rendered in 8K resolution with hyperrealistic details, sharp facial features, and a modern, vibrant atmosphere"
+          - "[trigger] with sharp, chiseled facial features, wearing an avant-garde headpiece in the form of a spinning vinyl record. The record acts as a futuristic hat, with a turntable needle placed on it as if playing. His lips are well-defined, and his jawline is accentuated by moody lighting. The lighting is high-contrast and dramatic, casting deep shadows that conceal his eyes, creating a sense of mystery. The background is a sleek, modern gradient gray, emphasizing the conceptual and artistic nature of the portrait. Rendered in 8K resolution with hyperrealistic textures, cinematic lighting, and an artistic, surreal composition"
+          - "Take a photo on the poster of [trigger] Lara Croft Tomb Raider, in the hands of pistols, hands to the face crosswise"
+          - "portrait of a [trigger] with wavy, golden blonde hair styled in a slightly tousled manner, with light stubble, bright eyes, and a warm smile. He holds a bouquet of pink peonies in his arms, looking down at the flowers. He is wearing a relaxed white shirt with the top buttons undone, layered with a beige knit cardigan. His pose is casual, with one hand gently holding the flowers, the other tucked in his pocket. The background is a soft, neutral beige, creating a warm and inviting atmosphere. Professional soft natural daylight lighting emphasizes his hair, facial features, and flowers. Sharp focus highlights the texture of the hair, petals, and clothing. Subtle pastel color grading enhances the gentle and comforting mood"
+          - "photograph, woman, [trigger], UHD, photorealistic"
+          - "Headshot of a handsome young [trigger]: Dark green sweater with buttons and shawl collar, black hair, short beard. Serious expression on a black background, soft studio lighting."
+        adapter_paths:  # путь к адаптерам эффектов для генерации матрицы
+          - "/workspace/adapters/amateurphoto-v6-forcu.safetensors"
+          - "/workspace/adapters/filmfotos.safetensors"
+          - "/workspace/adapters/Flux_Realism.safetensors"
+          - "/workspace/adapters/HDR.safetensors"
+          - "/workspace/adapters/UltraRealPhoto.safetensors"
+          -
+# you can add any additional meta info here. [name] is replaced with config name at top
+meta:
+  name: "[name]"
+  version: '1.0'
