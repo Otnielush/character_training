@@ -12,7 +12,7 @@ config:
       device: cuda:0
       # if a trigger word is specified, it will be added to captions of training data if it does not already exist
       # alternatively, in your captions you can add [trigger] and it will be replaced with the trigger word
-      trigger_word: "0TN1"
+      trigger_word: "U5ER"
       network:
         type: "lora"
         linear: 128
@@ -21,7 +21,29 @@ config:
           # for targeting a specific layers. variants in helpers/lora_configs.py
           only_if_contains:
             - "transformer.single_transformer_blocks.7"
+#            - "transformer.single_transformer_blocks.8"
+            - "transformer.single_transformer_blocks.9"
+#            - "transformer.single_transformer_blocks.10"
+#            - "transformer.single_transformer_blocks.11"
+#            - "transformer.single_transformer_blocks.12"
+#            - "transformer.single_transformer_blocks.13"
+#            - "transformer.single_transformer_blocks.14"
+#            - "transformer.single_transformer_blocks.15"
+#            - "transformer.single_transformer_blocks.16"
+#            - "transformer.single_transformer_blocks.17"
+#            - "transformer.single_transformer_blocks.18"
+#            - "transformer.single_transformer_blocks.19"
             - "transformer.single_transformer_blocks.20"
+#            - "transformer.single_transformer_blocks.21"
+#            - "transformer.single_transformer_blocks.22"
+#            - "transformer.single_transformer_blocks.23"
+#            - "transformer.single_transformer_blocks.24"
+            - "transformer.single_transformer_blocks.25"
+#            - "transformer.single_transformer_blocks.26"
+#            - "transformer.single_transformer_blocks.27"
+#            - "transformer.single_transformer_blocks.28"
+#            - "transformer.single_transformer_blocks.29"
+#            - "transformer.single_transformer_blocks.30"
 
       save:
         dtype: bfloat16 # precision to save
@@ -45,7 +67,7 @@ config:
           resolution: [ 512, 768, 1024]  # flux enjoys multiple resolutions
       train:
         batch_size: 2
-        steps: 800  # total number of steps to train 500 - 4000 is a good range
+        steps: 1000  # total number of steps to train 500 - 4000 is a good range
         gradient_accumulation_steps: 2
         train_unet: true
         train_text_encoder: false  # probably won't work with flux
@@ -53,7 +75,7 @@ config:
         gradient_checkpointing: false  # need the on unless you have a ton of vram
         noise_scheduler: "flowmatch" # for training only
         optimizer: "adamw8bit" # "adamw8bit"
-        lr: 1e-3
+        lr: 5e-4
         # uncomment this to skip the pre training sample
         skip_first_sample: true
         # uncomment to completely disable sampling
@@ -63,8 +85,8 @@ config:
         lr_scheduler: linear
         lr_scheduler_params:
           start_factor : 1.0
-          end_factor: 0.1
-          total_iters: 800
+          end_factor: 0.15
+          total_iters: 1000
 
         # ema will smooth out learning, but could slow it down. Recommended to leave on.
         ema_config:
@@ -82,7 +104,7 @@ config:
 #        low_vram: true  # uncomment this if the GPU is connected to your monitors. It will use less vram to quantize, but is slower.
       sample:
         sampler: "flowmatch" # must match train.noise_scheduler
-        sample_every: 800 # sample every this many steps
+        sample_every: 1200 # sample every this many steps
         width: 512
         height: 512
         prompts:
@@ -111,6 +133,8 @@ config:
         height: 1024
         sample_steps: 50  # сколько итераций на генерацию 1 картинки. 28 - среднее качество, 50 - максимальное
         prompts:  # инструкции для генерации картинок
+          - "A close-up portrait of a rugged, strong-jawed man with piercing blue eyes, gazing intently into the distance. His tanned skin is rough, marked with subtle dirt smudges and light stubble, giving him a raw, earthy look. His lips are slightly parted, and his expression conveys quiet determination and resilience. His chiseled cheekbones catch the soft, diffused light, emphasizing the contours of his face. He wears a handwoven fabric headband in muted gray, tightly wrapped around his forehead. The headband is adorned with an intricate floral arrangement consisting of delicate white roses, dried beige and brown flowers, and a few scattered crimson autumn leaves. A single thin, rustic twig is woven into the headband, adding an organic, weathered element to the composition. His dark, wavy hair is thick and slightly tousled, peeking out from beneath the headband. The warm, golden light of the scene enhances the earthy tones of his features, casting a gentle glow over his face and accentuating the texture of his skin. The background is blurred, consisting of neutral and earthy hues, suggesting an outdoor, possibly rugged natural environment. The overall aesthetic of the image blends elements of mythology, nature, and raw masculinity. The floral crown and roughened appearance create a contrast between beauty and resilience, evoking a sense of a warrior-poet or a modern reinterpretation of a mythical figure. The composition is intimate and focused, with a shallow depth of field emphasizing the subject’s presence and emotional depth."
+          - "A Renaissance-style portrait of a young [trigger] woman with porcelain skin, high cheekbones, and deep red lips, holding a majestic white goose in her arms. Her gaze is calm yet intense, framed by delicately arched eyebrows and soft shadows that accentuate her facial structure. Her voluminous red headwrap, made of rich, textured fabric, cascades in dramatic folds, adding an air of regal elegance. She is draped in a flowing black garment, its fabric absorbing the soft, directional lighting, creating a chiaroscuro effect reminiscent of classical paintings. The goose, with its pristine white feathers and gracefully curved neck, nestles against her, its intelligent eyes and sharp orange beak adding contrast to the composition. The background is a dark, painterly texture, enhancing the subject's luminous presence. The scene is lit with soft, diffused lighting, casting subtle highlights on her skin and the goose’s feathers. The color palette is rich and warm, dominated by deep reds, blacks, and creams, evoking a timeless, classical aesthetic. Shot with a Canon EOS R5, 85mm f/1.2 lens, Rembrandt lighting, deep contrast, warm Renaissance-inspired tones."
           - "A beautiful [trigger] asian woman in traditional clothing with golden hairpin and green eyes, wearing a red kimono with dragon patterns"
           - "portrait of a young [trigger] with short, tousled dark brown hair, light stubble, and sharp facial features. He is wearing a fitted white T-shirt with red accents, featuring the text 'I Solved the Cube!' and an image of a Rubik’s cube. He has a confident and playful smirk. He is holding a solved Rubik’s cube in one hand, with the other hand casually resting on his hip. His posture is relaxed, and he is making direct eye contact with the camera. The background is an outdoor urban park with blurred trees and city structures. The lighting is warm and natural, highlighting his jawline and the texture of his T-shirt. Rendered in 8K resolution with hyperrealistic details, sharp facial features, and a modern, vibrant atmosphere"
           - "[trigger] with sharp, chiseled facial features, wearing an avant-garde headpiece in the form of a spinning vinyl record. The record acts as a futuristic hat, with a turntable needle placed on it as if playing. His lips are well-defined, and his jawline is accentuated by moody lighting. The lighting is high-contrast and dramatic, casting deep shadows that conceal his eyes, creating a sense of mystery. The background is a sleek, modern gradient gray, emphasizing the conceptual and artistic nature of the portrait. Rendered in 8K resolution with hyperrealistic textures, cinematic lighting, and an artistic, surreal composition"
@@ -119,12 +143,12 @@ config:
           - "photograph, woman, [trigger], UHD, photorealistic"
           - "Headshot of a handsome young [trigger]: Dark green sweater with buttons and shawl collar, black hair, short beard. Serious expression on a black background, soft studio lighting."
         adapter_paths:  # путь к адаптерам эффектов для генерации матрицы
-          - "/workspace/adapters/amateurphoto-v6-forcu.safetensors"
-          - "/workspace/adapters/filmfotos.safetensors"
-          - "/workspace/adapters/Flux_Realism.safetensors"
-          - "/workspace/adapters/HDR.safetensors"
+          - "/workspace/adapters/Canopus-LoRA-Flux-UltraRealism.safetensors"
           - "/workspace/adapters/UltraRealPhoto.safetensors"
-          -
+        permanent_adapter_paths:
+          - "/workspace/adapters/Hand v2.safetensors"
+
+
 # you can add any additional meta info here. [name] is replaced with config name at top
 meta:
   name: "[name]"

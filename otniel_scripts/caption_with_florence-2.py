@@ -13,14 +13,6 @@ from pillow_heif import register_heif_opener
 register_heif_opener()
 
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
-torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
-model_name = "microsoft/Florence-2-large"
-
-model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype, trust_remote_code=True).to(
-    device).eval()
-processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
-
 
 def run_model(task_prompt, image, text_input=None):
     if text_input is None:
@@ -42,7 +34,7 @@ def get_bboxes_person_head(image):
         areas = [(bb[2]-bb[0]) * (bb[3]-bb[1]) for bb in person['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes']]
         person['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes'] = [person['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes'][np.argmax(areas)]]
     person_bbox = person['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes']
-    head = run_model('<CAPTION_TO_PHRASE_GROUNDING>', image, "head")
+    head = run_model('<CAPTION_TO_PHRASE_GROUNDING>', image, "human face")
     if len(person['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes']) == 0:
         return [], [head[0]]
     if len(head['<CAPTION_TO_PHRASE_GROUNDING>']['bboxes']) > 1:  # chooce smallest inside person box
@@ -158,13 +150,20 @@ def process_directory(args, image_dir, total_to_process: int = None, ):
                 else:
                     image = Image.open(full_filepath)
 
-                person, head = get_bboxes_person_head(image)
-                image_rotated, person_bbox, head_bbox = rotate_if_needed(image, person, head)
-                image_resized = crop_resize(image_rotated, args.target_size, person_bbox, head_bbox)
-                caption = run_model("<MORE_DETAILED_CAPTION>", image_resized)['<MORE_DETAILED_CAPTION>']
+                if not args.no_transform:
+                    person, head = get_bboxes_person_head(image)
+                    image_rotated, person_bbox, head_bbox = rotate_if_needed(image, person, head)
+                    image_resized = crop_resize(image_rotated, args.target_size, person_bbox, head_bbox)
+                else:
+                    image_resized = image
+
+                if not args.no_caption:
+                    caption = run_model("<MORE_DETAILED_CAPTION>", image_resized)['<MORE_DETAILED_CAPTION>']
+                else:
+                    caption = ''
 
                 if len(args.trigger) > 0:
-                    caption = args.trigger + " " + caption
+                    caption = (args.trigger + " " + caption).strip()
 
                 output_filepath = os.path.join(output_dir, filename)
                 image_resized.save(output_filepath, format='JPEG', quality=95)
@@ -189,8 +188,10 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Process images and generate captions.")
     parser.add_argument("input_dir", type=str, help="Directory containing the images.")
     parser.add_argument("--output_dir", type=str, default="", help="Directory to save images and captions.")
-    parser.add_argument("--trigger",type=str,default="[trigger]",help="Trigger word/s for character",)
-    parser.add_argument("--target_size",type=int,default=1024,help="Side size for image (squared)",)
+    parser.add_argument("--trigger",type=str,default="[trigger]",help="Trigger word/s for character")
+    parser.add_argument("--target_size",type=int,default=1024,help="Side size for image (squared)")
+    parser.add_argument("-no_caption", action='store_true', help="Not generating captions? only adds 'trigger'")
+    parser.add_argument("-no_transform", action='store_true', help="Do not crop, resize or rotate images")
 
     args = parser.parse_args()
     return args
@@ -199,5 +200,16 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    print("Trigger word will be added to captions:", args.trigger)
+    # print("Trigger word will be added to captions:", args.trigger)
+    print("Parameters:\n\t", args)
+
+    if not (args.no_caption and args.no_transform):
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        torch_dtype = torch.bfloat16 if torch.cuda.is_available() else torch.float32
+        model_name = "microsoft/Florence-2-large"
+
+        model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=torch_dtype, trust_remote_code=True).to(
+            device).eval()
+        processor = AutoProcessor.from_pretrained(model_name, trust_remote_code=True)
+
     process_directory(args, args.input_dir)
