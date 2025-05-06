@@ -55,4 +55,3 @@ CMD ["/app/character_training/start_training.sh"]
     # -v /dataset
     # -v /workspace/hf
     # -v /training_output
-    # -v /workspace/config
